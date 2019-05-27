@@ -33,7 +33,7 @@ Resources:
           AssociatePublicIpAddress: 'true'
           SubnetId: <%=env_subnet%>
           GroupSet: 
-             - Ref: vmSecurityGroup
+             - Ref: VMSecurityGroup
       Tags:
         - Key: Name
           Value: vm-<%=env_name%>
