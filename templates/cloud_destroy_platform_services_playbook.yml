@@ -1,0 +1,38 @@
+- hosts: master
+  become: yes
+  tasks:
+    - name: Delete directory for platform service yml files
+      become: yes
+      become_user: <%=cloud_instance_username%>
+      file:
+        path: $HOME/k8s_platform_services
+        state: directory
+        mode: 0755
+
+    - name: Copy k8s deploy yml files
+      become: yes
+      become_user: <%=cloud_instance_username%>
+      copy: src={{ item.src }} dest={{ item.dest }}
+      with_items:
+        - { src: '../templates/k8s_components/logging.yml', dest: '$HOME/k8s_platform_services/logging.yml' }
+        - { src: '../templates/k8s_components/metrics.yml', dest: '$HOME/k8s_platform_services/metrics.yml' }
+
+    - name: Delete nginx ingress components
+      become: yes
+      become_user: <%=cloud_instance_username%>
+      raw: kubectl delete -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/mandatory.yaml
+
+    - name: Delete ingress controller service
+      become: yes
+      become_user: <%=cloud_instance_username%>
+      raw: kubectl delete -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/provider/cloud-generic.yaml
+
+    - name: Delete logging
+      become: yes
+      become_user: <%=cloud_instance_username%>
+      raw: kubectl delete -f "$HOME/k8s_platform_services/logging.yml"
+
+    - name: Delete metrics
+      become: yes
+      become_user: <%=cloud_instance_username%>
+      raw: kubectl delete -f "$HOME/k8s_platform_services/metrics.yml"

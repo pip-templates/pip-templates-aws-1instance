@@ -1,0 +1,54 @@
+- hosts: all
+  become: yes
+  gather_facts: false
+  tasks:
+  #  - name: install Docker
+  #    apt:
+  #      name: docker.io
+  #      state: present
+  #      update_cache: true
+
+   - name: install Docker
+     become: yes
+     shell: export VERSION=18.03 && curl -sSL get.docker.com | sh
+
+   - name: install APT Transport HTTPS
+     apt:
+       name: apt-transport-https
+       state: present
+
+   - name: add Kubernetes apt-key
+     apt_key:
+       url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+       state: present
+
+   - name: add Kubernetes' APT repository
+     apt_repository:
+      repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+      state: present
+      filename: 'kubernetes'
+
+   - name: install kubernetes-cni
+     apt:
+       name: kubernetes-cni=<%=cloud_kubernetes_cni_version%>
+       state: present
+
+   - name: install kubelet
+     apt:
+       name: kubelet=<%=cloud_kubelet_version%>
+       state: present
+
+   - name: install kubeadm
+     apt:
+       name: kubeadm=<%=cloud_kubeadm_version%>
+       state: present
+
+- hosts: master
+  become: yes
+  gather_facts: false
+  tasks:
+   - name: install kubectl
+     apt:
+       name: kubectl=<%=cloud_kubectl_version%>
+       state: present
+       force: yes

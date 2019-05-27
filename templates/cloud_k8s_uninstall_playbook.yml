@@ -1,0 +1,7 @@
+- name: K8S Uninstallation
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Destroy k8s cluster
+      shell: kubeadm reset

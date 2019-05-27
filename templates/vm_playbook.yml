@@ -1,0 +1,142 @@
+---
+- name: Configure management vm
+  hosts: all
+  become_user: root
+  become_method: sudo
+  gather_facts: False
+
+  pre_tasks:
+    - name: Install python for Ansible
+      become: True
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal && sudo dpkg --configure -a)
+      register: output
+      changed_when: output.stdout != ""
+    - setup: # aka gather_facts
+  
+  tasks:
+    - name: Upgrade packages
+      become: True
+      apt:
+        upgrade: yes
+        update_cache: yes
+    
+    - name: Enable password access via SSH and RDP
+      become: True
+      block:
+        - name: Allow password authentication for ssh
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: '^PasswordAuthentication no'
+            line: 'PasswordAuthentication yes'
+        - name: Restart ssh
+          raw: /etc/init.d/ssh restart
+        - name: Set ubuntu user password
+          become: True
+          raw: echo "ubuntu:<%=vm_pass%>" | chpasswd
+
+    - name: Enable remote desktop access
+      become: True
+      block:
+        - name: Install X-Windows and RDP
+          apt:
+            name: "{{ item }}"
+            state: present
+          with_items:
+            - xrdp 
+            - xfce4 
+            - xfce4-goodies 
+            - tightvncserver
+        - name: Configure X-Windows
+          shell: |
+            echo xfce4-session> /home/ubuntu/.xsession
+            cp /home/ubuntu/.xsession /etc/skel
+            sed -i '0,/-1/s//ask-1/' /etc/xrdp/xrdp.ini
+        - name: Restart RDP
+          service:
+            name: xrdp
+            state: restarted
+
+    - name: Install powershell tools
+      become: True
+      block:
+        - name: Retrieve microsoft repository
+          apt_key:
+            url: https://packages.microsoft.com/keys/microsoft.asc
+            state: present
+        - name: Configure microsoft repository
+          raw: curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
+        - name: Install powershell
+          apt:
+            name: powershell
+            update_cache: yes
+            state: present
+
+    - name: Install aws tools
+      become: True
+      block:
+        - name: Install python
+          apt:
+            name: "{{ item }}"
+            state: present
+          with_items:
+            - python-setuptools 
+            - python-dev 
+            - build-essential
+        - name: Install pip
+          easy_install:
+            name: pip
+            state: present
+        - name: Install aws cli
+          pip: 
+            name: awscli
+            state: present
+
+    - name: Install kops
+      become: True
+      get_url:
+        url: https://github.com/kubernetes/kops/releases/download/1.9.0/kops-linux-amd64
+        dest: /usr/bin/kops
+        mode: 0777
+
+    - name: Install kubectl
+      become: True
+      get_url:
+        url: https://storage.googleapis.com/kubernetes-release/release/v1.9.7/bin/linux/amd64/kubectl
+        dest: /usr/local/bin/kubectl
+        mode: 0777
+
+    - name: Install ansible tools
+      become: True
+      block:
+        - name: Configure ansible repository
+          apt_repository:
+            repo: ppa:ansible/ansible
+            state: present
+        - name: Install ansible
+          apt:
+            update_cache: yes
+            name: "{{ item }}"
+            state: present
+          with_items:
+            - software-properties-common
+            - ansible
+
+    - name: Install mongodb tools
+      become: True
+      block:
+        - name: Add key to mongodb repository
+          apt_key:
+            keyserver: hkp://keyserver.ubuntu.com:80
+            id: 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
+        - name: Configure mongodb repository
+          raw: echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
+        - name: Install mongodb shell
+          apt:
+            name: mongodb-org-shell
+            update_cache: yes
+            state: present
+        - name: Install mongodb tools
+          apt:
+            name: mongodb-org-tools
+            state: present
+       

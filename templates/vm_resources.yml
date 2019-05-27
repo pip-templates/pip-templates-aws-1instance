@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Resources:
+  VMSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Open public access to Management VM
+      VpcId: <%=env_vpc%>
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Environment
+          Value: <%=env_name%>
+        - Key: Name
+          Value: vm-<%=env_name%>
+
+  VMInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: <%=vm_instance_type%>
+      ImageId: <%=vm_ami%>
+      KeyName: <%=env_keyname%>
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          DeleteOnTermination: 'true'
+          AssociatePublicIpAddress: 'true'
+          SubnetId: <%=env_subnet%>
+          GroupSet: 
+             - Ref: vmSecurityGroup
+      Tags:
+        - Key: Name
+          Value: vm-<%=env_name%>
+        - Key: Environment
+          Value: <%=env_name%>
+        - Key: Role
+          Value: vm
+      # UserData:
+      #   'Fn::Base64': !Sub |
+      #     #!/bin/bash -xe
+      #     apt-get update
+
+Outputs:
+  PublicIp:
+    Description: Management VM Public IP
+    Value: { "Fn::GetAtt" : [ "VMInstance", "PublicIp"] }
+  PrivateIp:
+    Description: Management VM Private IP
+    Value: { "Fn::GetAtt" : [ "VMInstance", "PrivateIp"] }
