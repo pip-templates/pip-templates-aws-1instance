@@ -27,11 +27,7 @@ $e_minMemMb = 2000
 
 # Prepare hosts file
 $ansibleInventory = @("[nodes]")
-$i = 0
-foreach ($node in $config.nodes_ips) {
-    $ansibleInventory += "node$i ansible_host=$node ansible_ssh_user=$($config.username) ansible_ssh_private_key_file=$($config.env_ssh_key)"
-    $i++
-}
+$ansibleInventory += "node0 ansible_host=$($resources.vm_public_address) ansible_ssh_user=$($config.cloud_instance_username) ansible_ssh_private_key_file=$($config.env_ssh_key)"
 
 Set-Content -Path "$path/../temp/test_ansible_hosts" -Value $ansibleInventory
 
