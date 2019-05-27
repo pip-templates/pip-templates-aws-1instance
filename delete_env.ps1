@@ -24,6 +24,7 @@ switch ($config.env_type) {
     "cloud" { 
         . "$($rootPath)/cloud/destroy_k8s.ps1" $ConfigPath
         . "$($rootPath)/cloud/destroy_vm.ps1" $ConfigPath
+        . "$($rootPath)/cloud/destroy_vpc.ps1" $ConfigPath
      }
     Default {
         Write-Host "Platform type not specified in config file. Please add 'env_type' to config."

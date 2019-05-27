@@ -22,6 +22,7 @@ $resources = Read-EnvResources -Path $ConfigPath
 
 switch ($config.env_type) {
     "cloud" { 
+        . "$($rootPath)/cloud/install_vpc.ps1" $ConfigPath
         . "$($rootPath)/cloud/install_vm.ps1" $ConfigPath
         . "$($rootPath)/cloud/configure_vm.ps1" $ConfigPath
         . "$($rootPath)/cloud/install_k8s.ps1" $ConfigPath
